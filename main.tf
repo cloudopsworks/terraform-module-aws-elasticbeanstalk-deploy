@@ -22,7 +22,7 @@ module "dns" {
   sts_assume_role          = var.sts_assume_role
   release_name             = var.release.name
   namespace                = var.namespace
-  private_domain           = var.dns.private_zone
+  private_domain           = try(var.dns.private_zone, false)
   domain_name              = var.dns.domain_name
   domain_name_alias_prefix = var.dns.alias_prefix
   domain_alias             = true
