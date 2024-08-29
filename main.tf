@@ -61,22 +61,19 @@ module "version" {
 }
 
 module "app" {
-  source          = "cloudopsworks/beanstalk-deploy/aws"
-  version         = "1.0.15"
-  region          = var.region
-  sts_assume_role = var.sts_assume_role
-
-  release_name   = var.release.name
-  namespace      = var.namespace
-  solution_stack = var.beanstalk.solution_stack
-
-  application_version_label = module.version.application_version_label
-
-  private_subnets = var.beanstalk.networking.private_subnets
-  public_subnets  = var.beanstalk.networking.public_subnets
-  vpc_id          = var.beanstalk.networking.vpc_id
-  server_types    = var.beanstalk.instance.server_types
-
+  #   source                         = "cloudopsworks/beanstalk-deploy/aws"
+  #   version                        = "1.0.16"
+  source                         = "github.com/cloudopsworks/terraform-aws-beanstalk-deploy.git//?ref=develop"
+  region                         = var.region
+  sts_assume_role                = var.sts_assume_role
+  release_name                   = var.release.name
+  namespace                      = var.namespace
+  solution_stack                 = var.beanstalk.solution_stack
+  application_version_label      = module.version.application_version_label
+  private_subnets                = var.beanstalk.networking.private_subnets
+  public_subnets                 = var.beanstalk.networking.public_subnets
+  vpc_id                         = var.beanstalk.networking.vpc_id
+  server_types                   = var.beanstalk.instance.server_types
   beanstalk_application          = var.beanstalk.application
   beanstalk_ec2_key              = can(var.beanstalk.instance.ec2_key) ? var.beanstalk.instance.ec2_key : null
   beanstalk_ami_id               = can(var.beanstalk.instance.ami_id) ? var.beanstalk.instance.ami_id : null
@@ -99,9 +96,9 @@ module "app" {
   load_balancer_ssl_certificate_id = var.beanstalk.load_balancer.ssl_certificate_id
   load_balancer_ssl_policy         = can(var.beanstalk.load_balancer.ssl_policy) ? var.beanstalk.load_balancer.ssl_policy : null
   load_balancer_alias              = can(var.beanstalk.load_balancer.alias) ? var.beanstalk.load_balancer.alias : null
-
-  port_mappings  = var.beanstalk.port_mappings
-  rule_mappings  = try(var.beanstalk.rule_mappings, [])
-  extra_tags     = merge(try(var.beanstalk.extra_tags, {}), module.tags.locals.common_tags)
-  extra_settings = var.beanstalk.extra_settings
+  custom_shared_rules              = try(var.beanstalk.custom_shared_rules, false)
+  port_mappings                    = var.beanstalk.port_mappings
+  rule_mappings                    = try(var.beanstalk.rule_mappings, [])
+  extra_tags                       = merge(try(var.beanstalk.extra_tags, {}), module.tags.locals.common_tags)
+  extra_settings                   = var.beanstalk.extra_settings
 }
