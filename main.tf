@@ -61,9 +61,6 @@ module "version" {
 }
 
 module "app" {
-  depends_on = [
-    module.version
-  ]
 #   source                         = "cloudopsworks/beanstalk-deploy/aws"
 #   version                        = "1.0.17"
   source                         = "github.com/cloudopsworks/terraform-aws-beanstalk-deploy.git//?ref=develop"
