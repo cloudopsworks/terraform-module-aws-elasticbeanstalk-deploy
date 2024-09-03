@@ -31,5 +31,5 @@ resource "aws_cloudwatch_metric_alarm" "metric_alarm" {
   dimensions = {
     EnvironmentName = module.app.environment_name
   }
-  tags = merge(local.tags, module.tags.locals.common_tags)
+  tags = merge(local.tags, local.all_tags)
 }

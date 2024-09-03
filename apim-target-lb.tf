@@ -13,7 +13,7 @@ resource "aws_api_gateway_vpc_link" "apigw_rest_link" {
   name        = try(var.api_gateway.vpc_link.link_name, "api-gw-nlb-${lower(var.release.name)}-${var.namespace}-nlb-link")
   description = "VPC Link for API Gateway to NLB: api-gw-nlb-${lower(var.release.name)}-${var.namespace}"
   target_arns = [aws_lb.apigw_rest_lb[0].arn]
-  tags        = merge(local.tags, module.tags.locals.common_tags)
+  tags        = merge(local.tags, local.all_tags)
 }
 
 #resource "aws_apigatewayv2_vpc_link" "apigw_http_link" {
@@ -31,7 +31,7 @@ resource "aws_lb" "apigw_rest_lb" {
   internal           = !var.beanstalk.load_balancer.public
   load_balancer_type = "network"
   subnets            = var.beanstalk.load_balancer.public ? var.beanstalk.networking.public_subnets : var.beanstalk.networking.private_subnets
-  tags               = merge(local.tags, module.tags.locals.common_tags)
+  tags               = merge(local.tags, local.all_tags)
 }
 
 resource "aws_lb_target_group" "apigw_rest_lb_tg" {
@@ -49,7 +49,7 @@ resource "aws_lb_target_group" "apigw_rest_lb_tg" {
     path     = try(var.api_gateway.vpc_link.health.path, "")
   }
 
-  tags = merge(local.tags, module.tags.locals.common_tags)
+  tags = merge(local.tags, local.all_tags)
 }
 
 resource "aws_lb_target_group_attachment" "apigw_rest_lb_tg_att" {
@@ -68,7 +68,7 @@ resource "aws_lb_listener" "apigw_rest_lb_listener" {
     type             = "forward"
     target_group_arn = aws_lb_target_group.apigw_rest_lb_tg[0].arn
   }
-  tags = merge(local.tags, module.tags.locals.common_tags)
+  tags = merge(local.tags, local.all_tags)
 }
 
 ## EXISTING NLB
@@ -95,7 +95,7 @@ resource "aws_lb_target_group" "apigw_rest_lb_tg_link" {
     matcher  = try(var.api_gateway.vpc_link.health.http_status, "")
     path     = try(var.api_gateway.vpc_link.health.path, "")
   }
-  tags = merge(local.tags, module.tags.locals.common_tags)
+  tags = merge(local.tags, local.all_tags)
 }
 
 resource "aws_lb_target_group_attachment" "apigw_rest_lb_tg_att_link" {
@@ -115,7 +115,7 @@ resource "aws_lb_listener" "apigw_rest_lb_listener_link" {
     type             = "forward"
     target_group_arn = aws_lb_target_group.apigw_rest_lb_tg_link[0].arn
   }
-  tags = merge(local.tags, module.tags.locals.common_tags)
+  tags = merge(local.tags, local.all_tags)
 
   lifecycle {
     replace_triggered_by = [aws_lb_target_group.apigw_rest_lb_tg_link[0]]

@@ -99,6 +99,6 @@ module "app" {
   custom_shared_rules              = try(var.beanstalk.custom_shared_rules, false)
   port_mappings                    = var.beanstalk.port_mappings
   rule_mappings                    = try(var.beanstalk.rule_mappings, [])
-  extra_tags                       = merge(try(var.beanstalk.extra_tags, {}), module.tags.locals.common_tags)
+  extra_tags                       = merge(try(var.beanstalk.extra_tags, {}), local.all_tags)
   extra_settings                   = var.beanstalk.extra_settings
 }
