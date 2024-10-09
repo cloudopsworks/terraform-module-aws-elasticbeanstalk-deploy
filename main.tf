@@ -31,8 +31,10 @@ module "dns" {
 }
 
 module "version" {
-  source          = "cloudopsworks/beanstalk-version/aws"
-  version         = "1.0.15"
+  # source          = "cloudopsworks/beanstalk-version/aws"
+  # version         = "1.0.17"
+  source          = "github.com/cloudopsworks/terraform-aws-beanstalk-version.git//?ref=develop"
+
   region          = var.region
   sts_assume_role = var.sts_assume_role
 
@@ -50,10 +52,10 @@ module "version" {
   application_versions_bucket = var.versions_bucket
 
   beanstalk_application = var.beanstalk.application
+  release_folder        = var.absolute_path == "" ? format("%s/%s", "target", var.release.name) : format("%s/%s/%s", var.absolute_path, "target", var.release.name)
   config_source_folder  = var.absolute_path == "" ? format("%s/%s", "values", var.release.name) : format("%s/%s/%s", var.absolute_path, "values", var.release.name)
   config_hash_file      = var.absolute_path == "" ? format("%s_%s", ".values_hash", var.release.name) : format("%s/%s_%s", var.absolute_path, ".values_hash", var.release.name)
 
-  github_package = try(var.release.source.githubPackages.name, "") != "" && try(var.release.source.githubPackages.type, "") != ""
   package_name   = try(var.release.source.githubPackages.name, "")
   package_type   = try(var.release.source.githubPackages.type, "")
 
@@ -62,7 +64,7 @@ module "version" {
 
 module "app" {
 #   source                         = "cloudopsworks/beanstalk-deploy/aws"
-#   version                        = "1.0.17"
+#   version                        = "1.0.18"
   source                         = "github.com/cloudopsworks/terraform-aws-beanstalk-deploy.git//?ref=develop"
   region                         = var.region
   sts_assume_role                = var.sts_assume_role
