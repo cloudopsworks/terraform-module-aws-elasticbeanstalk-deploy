@@ -52,7 +52,7 @@ module "version" {
   application_versions_bucket = var.versions_bucket
 
   beanstalk_application = var.beanstalk.application
-  release_folder        = var.absolute_path == "" ? format("%s/%s", "target", var.release.name) : format("%s/%s/%s", var.absolute_path, "target", var.release.name)
+  release_folder        = var.absolute_path == "" ? "target" : format("%s/%s", var.absolute_path, "target")
   config_source_folder  = var.absolute_path == "" ? format("%s/%s", "values", var.release.name) : format("%s/%s/%s", var.absolute_path, "values", var.release.name)
   config_hash_file      = var.absolute_path == "" ? format("%s_%s", ".values_hash", var.release.name) : format("%s/%s_%s", var.absolute_path, ".values_hash", var.release.name)
 
