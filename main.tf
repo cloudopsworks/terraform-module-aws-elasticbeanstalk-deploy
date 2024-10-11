@@ -9,6 +9,8 @@ locals {
     Namespace   = var.namespace
     Release     = var.release.name
   })
+  qualifier        = try(var.release.qualifier, "")
+  shared_lb_weight = try(var.beanstalk.load_balancer.shared.weight, 100)
 }
 ##
 # This module to manage DNS association.
@@ -21,10 +23,11 @@ module "dns" {
   region                   = var.region
   sts_assume_role          = var.sts_assume_role
   release_name             = var.release.name
-  namespace                = var.namespace
+  namespace                = local.qualifier != "" ? format("%s-%s", var.namespace, local.qualifier) : var.namespace
   private_domain           = try(var.dns.private_zone, false)
   domain_name              = var.dns.domain_name
   domain_name_alias_prefix = var.dns.alias_prefix
+  domain_name_weight       = local.qualifier != "" ? (local.qualifier == "green" ? 100 : 1) : -1
   domain_alias             = true
   alias_cname              = module.app.environment_cname
   alias_zone_id            = module.app.environment_zone_id
@@ -33,7 +36,7 @@ module "dns" {
 module "version" {
   # source          = "cloudopsworks/beanstalk-version/aws"
   # version         = "1.0.17"
-  source          = "github.com/cloudopsworks/terraform-aws-beanstalk-version.git//?ref=develop"
+  source = "github.com/cloudopsworks/terraform-aws-beanstalk-version.git//?ref=develop"
 
   region          = var.region
   sts_assume_role = var.sts_assume_role
@@ -41,7 +44,7 @@ module "version" {
   release_name     = var.release.name
   source_name      = var.release.source.name
   source_version   = var.release.source.version
-  namespace        = var.namespace
+  namespace        = local.qualifier != "" ? format("%s-%s", var.namespace, local.qualifier) : var.namespace
   solution_stack   = var.beanstalk.solution_stack
   repository_owner = var.repository_owner
   # Uncomment below to override the default source for the solution stack
@@ -56,20 +59,20 @@ module "version" {
   config_source_folder  = var.absolute_path == "" ? format("%s/%s", "values", var.release.name) : format("%s/%s/%s", var.absolute_path, "values", var.release.name)
   config_hash_file      = var.absolute_path == "" ? format("%s_%s", ".values_hash", var.release.name) : format("%s/%s_%s", var.absolute_path, ".values_hash", var.release.name)
 
-  package_name   = try(var.release.source.githubPackages.name, "")
-  package_type   = try(var.release.source.githubPackages.type, "")
+  package_name = try(var.release.source.githubPackages.name, "")
+  package_type = try(var.release.source.githubPackages.type, "")
 
   extra_run_command = try(var.release.extra_run_command, "")
 }
 
 module "app" {
-#   source                         = "cloudopsworks/beanstalk-deploy/aws"
-#   version                        = "1.0.18"
+  #   source                         = "cloudopsworks/beanstalk-deploy/aws"
+  #   version                        = "1.0.18"
   source                         = "github.com/cloudopsworks/terraform-aws-beanstalk-deploy.git//?ref=develop"
   region                         = var.region
   sts_assume_role                = var.sts_assume_role
   release_name                   = var.release.name
-  namespace                      = var.namespace
+  namespace                      = local.qualifier != "" ? format("%s-%s", var.namespace, local.qualifier) : var.namespace
   solution_stack                 = var.beanstalk.solution_stack
   application_version_label      = module.version.application_version_label
   private_subnets                = var.beanstalk.networking.private_subnets
@@ -91,7 +94,7 @@ module "app" {
 
   load_balancer_shared             = try(var.beanstalk.load_balancer.shared.enabled, false)
   load_balancer_shared_name        = try(var.beanstalk.load_balancer.shared.name, "")
-  load_balancer_shared_weight      = try(var.beanstalk.load_balancer.shared.weight, 100)
+  load_balancer_shared_weight      = local.qualifier != "" ? (local.qualifier == "green" ? local.shared_lb_weight - 1 : local.shared_lb_weight) : local.shared_lb_weight
   load_balancer_public             = var.beanstalk.load_balancer.public
   load_balancer_log_bucket         = var.logs_bucket
   load_balancer_log_prefix         = var.release.name
