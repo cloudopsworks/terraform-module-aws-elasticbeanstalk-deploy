@@ -36,33 +36,17 @@ module "dns" {
 module "version" {
   # source          = "cloudopsworks/beanstalk-version/aws"
   # version         = "1.0.17"
-  source = "github.com/cloudopsworks/terraform-aws-beanstalk-version.git//?ref=develop"
+  source = "github.com/cloudopsworks/terraform-aws-beanstalk-version.git//?ref=release-v5"
 
   region          = var.region
   sts_assume_role = var.sts_assume_role
 
-  release_name     = var.release.name
-  source_name      = var.release.source.name
-  source_version   = var.release.source.version
-  namespace        = local.qualifier != "" ? format("%s-%s", var.namespace, local.qualifier) : var.namespace
-  solution_stack   = var.beanstalk.solution_stack
-  repository_owner = var.repository_owner
-  # Uncomment below to override the default source for the solution stack
-  #   Supported source_compressed_type: zip, tar, tar.gz, tgz, tar.bz, tar.bz2, etc.
-  force_source_compressed = can(var.release.source.force_compressed) ? var.release.source.force_compressed : false
-  source_compressed_type  = can(var.release.source.compressed_type) ? var.release.source.compressed_type : "zip"
-
-  application_versions_bucket = var.versions_bucket
+  release_name                = var.release.name
+  source_name                 = var.release.source.name
+  source_version              = var.release.source.version
+  namespace                   = local.qualifier != "" ? format("%s-%s", var.namespace, local.qualifier) : var.namespace
 
   beanstalk_application = var.beanstalk.application
-  release_folder        = var.absolute_path == "" ? "target" : format("%s/%s", var.absolute_path, "target")
-  config_source_folder  = var.absolute_path == "" ? format("%s/%s", "values", var.release.name) : format("%s/%s/%s", var.absolute_path, "values", var.release.name)
-  config_hash_file      = var.absolute_path == "" ? format("%s_%s", ".values_hash", var.release.name) : format("%s/%s_%s", var.absolute_path, ".values_hash", var.release.name)
-
-  package_name = try(var.release.source.githubPackages.name, "")
-  package_type = try(var.release.source.githubPackages.type, "")
-
-  extra_run_command = try(var.release.extra_run_command, "")
 }
 
 module "app" {
