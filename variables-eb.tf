@@ -73,4 +73,5 @@ variable "absolute_path" {
 variable "bucket_path" {
   description = "Path to the S3 bucket"
   type        = string
+  default     = ""
 }
