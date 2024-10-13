@@ -52,7 +52,6 @@ module "version" {
   application_versions_bucket = var.versions_bucket
   bucket_path                 = var.bucket_path != "" ? var.bucket_path : local.version_file_path
   beanstalk_application       = var.beanstalk.application
-  config_hash_file            = local.config_hash_file
   config_file_sha             = local.config_file_sha
   version_label               = local.version_label
 }
