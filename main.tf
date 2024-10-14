@@ -13,7 +13,7 @@ locals {
   shared_lb_weight  = try(var.beanstalk.load_balancer.shared.weight, 100)
   config_hash_file  = var.absolute_path == "" ? format("%s_%s", ".values_hash", var.release.name) : format("%s/%s_%s", var.absolute_path, ".values_hash", var.release.name)
   config_file_sha   = upper(substr(split(" ", file(local.config_hash_file))[0], 0, 10))
-  version_label     = format("%s-%s-%s", var.release.name, var.release.source.version, local.config_file_sha)
+  version_label     = local.qualifier != "" ? format("%s-%s-%s-%s", var.release.name, var.release.source.version, local.config_file_sha, local.qualifier) : format("%s-%s-%s", var.release.name, var.release.source.version, local.config_file_sha)
   version_file_path = format("%s/%s/%s.zip", var.release.name, var.release.source.version, local.version_label)
 }
 ##
