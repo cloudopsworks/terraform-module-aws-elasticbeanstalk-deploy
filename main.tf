@@ -38,9 +38,9 @@ module "dns" {
 }
 
 module "version" {
-  # source  = "cloudopsworks/beanstalk-version/aws"
-  # version = "1.0.16"
-  source = "github.com/cloudopsworks/terraform-aws-beanstalk-version.git//?ref=release-v5"
+  source  = "cloudopsworks/beanstalk-version/aws"
+  version = "1.5.0"
+  # source = "github.com/cloudopsworks/terraform-aws-beanstalk-version.git//?ref=release-v5"
 
   region          = var.region
   sts_assume_role = var.sts_assume_role
