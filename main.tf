@@ -62,7 +62,7 @@ module "version" {
 
 module "app" {
   source                         = "cloudopsworks/beanstalk-deploy/aws"
-  version                        = "1.0.19"
+  version                        = "1.0.20"
   region                         = var.region
   sts_assume_role                = var.sts_assume_role
   release_name                   = var.release.name
@@ -100,4 +100,5 @@ module "app" {
   rule_mappings                    = try(var.beanstalk.rule_mappings, [])
   extra_tags                       = merge(try(var.beanstalk.extra_tags, {}), local.all_tags)
   extra_settings                   = var.beanstalk.extra_settings
+  wait_for_ready_timeout           = try(var.beanstalk.wait_for_ready_timeout, "20m")
 }
