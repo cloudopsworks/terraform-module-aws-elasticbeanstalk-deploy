@@ -59,7 +59,7 @@ module "version" {
 module "app" {
   # source                         = "github.com/cloudopsworks/terraform-aws-beanstalk-deploy.git//?ref=develop"
   source                         = "cloudopsworks/beanstalk-deploy/aws"
-  version                        = "1.0.20"
+  version                        = "1.1.0"
   region                         = var.region
   sts_assume_role                = var.sts_assume_role
   release_name                   = var.release.name
