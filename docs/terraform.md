@@ -8,17 +8,17 @@
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 4.67.0 |
 
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_app"></a> [app](#module\_app) | github.com/cloudopsworks/terraform-aws-beanstalk-deploy.git// | develop |
+| <a name="module_app"></a> [app](#module\_app) | cloudopsworks/beanstalk-deploy/aws | 1.1.2 |
 | <a name="module_app_dns_shared"></a> [app\_dns\_shared](#module\_app\_dns\_shared) | cloudopsworks/beanstalk-dns/aws | 1.0.5 |
 | <a name="module_dns"></a> [dns](#module\_dns) | cloudopsworks/beanstalk-dns/aws | 1.0.5 |
 | <a name="module_tags"></a> [tags](#module\_tags) | cloudopsworks/tags/local | 1.0.9 |
-| <a name="module_version"></a> [version](#module\_version) | cloudopsworks/beanstalk-version/aws | 1.0.15 |
+| <a name="module_version"></a> [version](#module\_version) | cloudopsworks/beanstalk-version/aws | 1.5.0 |
 
 ## Resources
 
@@ -47,12 +47,13 @@
 | <a name="input_alarms"></a> [alarms](#input\_alarms) | Alarms configuration for the environment | `any` | `{}` | no |
 | <a name="input_api_gateway"></a> [api\_gateway](#input\_api\_gateway) | API Gateway configuration for the environment | `any` | `{}` | no |
 | <a name="input_beanstalk"></a> [beanstalk](#input\_beanstalk) | Beanstalk environment configuration | `any` | n/a | yes |
+| <a name="input_bucket_path"></a> [bucket\_path](#input\_bucket\_path) | Path to the S3 bucket | `string` | `""` | no |
 | <a name="input_dns"></a> [dns](#input\_dns) | DNS configuration for environment | `any` | `{}` | no |
 | <a name="input_extra_tags"></a> [extra\_tags](#input\_extra\_tags) | n/a | `map(string)` | `{}` | no |
 | <a name="input_is_hub"></a> [is\_hub](#input\_is\_hub) | Establish this is a HUB or spoke configuration | `bool` | `false` | no |
 | <a name="input_logs_bucket"></a> [logs\_bucket](#input\_logs\_bucket) | S3 bucket for application logs | `string` | n/a | yes |
 | <a name="input_namespace"></a> [namespace](#input\_namespace) | Environment namespace | `string` | n/a | yes |
-| <a name="input_org"></a> [org](#input\_org) | n/a | <pre>object({<br>    organization_name = string<br>    organization_unit = string<br>    environment_type  = string<br>    environment_name  = string<br>  })</pre> | n/a | yes |
+| <a name="input_org"></a> [org](#input\_org) | n/a | <pre>object({<br/>    organization_name = string<br/>    organization_unit = string<br/>    environment_type  = string<br/>    environment_name  = string<br/>  })</pre> | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | AWS region | `string` | `"us-east-1"` | no |
 | <a name="input_release"></a> [release](#input\_release) | Release configuration | `any` | n/a | yes |
 | <a name="input_repository_owner"></a> [repository\_owner](#input\_repository\_owner) | GitHub repository owner | `string` | n/a | yes |

@@ -1,4 +1,4 @@
-name: Terraform Transit Gateway Module
+name: Terraform Elastic Beanstalk Application Deployment Module
 #logo: logo/logo.jpg
 
 license: "APACHE2"
@@ -8,14 +8,23 @@ copyrights:
     url: "https://cloudops.works"
     year: "2024"
 
-github_repo: cloudopsworks/terraform-module-aws-vpc-setup
+github_repo: terraform-module-aws-elasticbeanstalk-deploy
 
 description: |-
-  Deployment module for Elastic Beanstalk applications through the [Base Application Module](https://github.com/cloudopsworks/base-app-template.git).
+  Deployment module for Elastic Beanstalk applications through the [Base Application Module](https://github.com/cloudopsworks/base-app-template.git). This module provides comprehensive configuration options for AWS Elastic Beanstalk deployments including load balancer setup, instance configurations, networking, DNS management, monitoring and alarms integration.
 
 # Introduction to the project
-#introduction: |-
-#  This is an introduction.
+introduction: |-
+  This Terraform module simplifies AWS Elastic Beanstalk application deployments by providing:
+  
+  - Multiple platform support (Java 8/11/17, Node.js 12/14/16/18, Go, Docker)
+  - Flexible load balancer configuration with shared LB support
+  - DNS management with Route53 integration
+  - CloudWatch alarms integration
+  - API Gateway VPC Link support
+  - Spot instance support for cost optimization
+  - Custom health checks and SSL configuration
+  - Comprehensive tag management
 
 # How to use this project
 usage: |-
@@ -171,10 +180,78 @@ usage: |-
   # TAG2: value2
   ```
 # Example usage
-#examples: |-
+examples: |-
+  ## Basic Terragrunt Configuration
+  ```hcl
+  include "root" {
+    path = find_in_parent_folders()
+  }
+
+  terraform {
+    source = "git::https://github.com/cloudopsworks/terraform-module-aws-elasticbeanstalk-deploy.git?ref=v1.0.0"
+  }
+
+  inputs = {
+    environment = "dev"
+    runner_set = "dev-runner"
+    versions_bucket = "my-versions-bucket"
+  
+    dns = {
+      enabled = true
+      private_zone = false
+      domain_name = "example.com"
+      alias_prefix = "myapp"
+    }
+  
+    beanstalk = {
+      solution_stack = "^64bit Amazon Linux 2 (.*) Node.js 18 AL2 (.*)$"
+      application = "myapp"
+  
+      load_balancer = {
+        public = true
+        ssl_certificate_id = "arn:aws:acm:region:account:certificate/certificate-id"
+      }
+  
+      instance = {
+        instance_port = 8080
+        enable_spot = true
+        server_types = ["t3.micro", "t3.small"]
+      }
+  
+      networking = {
+        vpc_id = "vpc-12345"
+        private_subnets = ["subnet-1", "subnet-2"]
+      }
+    }
+  }
+  ```
 
 # How to get started quickly
-#quickstart: |-
+quickstart: |-
+  1. Create a new Terragrunt configuration file (terragrunt.hcl)
+  2. Configure the module source and version:
+     ```hcl
+     terraform {
+       source = "git::https://github.com/cloudopsworks/terraform-module-aws-elasticbeanstalk-deploy.git?ref=v1.0.0"
+     }
+     ```
+  3. Set required variables:
+     - environment
+     - runner_set
+     - versions_bucket
+     - beanstalk configuration (solution_stack, application, networking)
+  4. Initialize Terragrunt:
+     ```bash
+     terragrunt init
+     ```
+  5. Review the plan:
+     ```bash
+     terragrunt plan
+     ```
+  6. Apply the configuration:
+     ```bash
+     terragrunt apply
+     ```
 
 include:
   - "docs/targets.md"
