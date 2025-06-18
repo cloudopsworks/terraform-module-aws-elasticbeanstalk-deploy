@@ -10,10 +10,12 @@
 
 [![cloudopsworks][logo]](https://cloudops.works/)
 
-# Terraform Transit Gateway Module
+# Terraform Elastic Beanstalk Application Deployment Module
 
 
-Deployment module for Elastic Beanstalk applications through the [Base Application Module](https://github.com/cloudopsworks/base-app-template.git).
+
+
+Deployment module for Elastic Beanstalk applications through the [Base Application Module](https://github.com/cloudopsworks/base-app-template.git). This module provides comprehensive configuration options for AWS Elastic Beanstalk deployments including load balancer setup, instance configurations, networking, DNS management, monitoring and alarms integration.
 
 
 ---
@@ -46,12 +48,24 @@ We have [*lots of terraform modules*][terraform_modules] that are Open Source an
 
 
 
+## Introduction
+
+This Terraform module simplifies AWS Elastic Beanstalk application deployments by providing:
+
+- Multiple platform support (Java 8/11/17, Node.js 12/14/16/18, Go, Docker)
+- Flexible load balancer configuration with shared LB support
+- DNS management with Route53 integration
+- CloudWatch alarms integration
+- API Gateway VPC Link support
+- Spot instance support for cost optimization
+- Custom health checks and SSL configuration
+- Comprehensive tag management
 
 ## Usage
 
 
 **IMPORTANT:** The `master` branch is used in `source` just as an example. In your code, do not pin to `master` because there may be breaking changes between releases.
-Instead pin to the release tag (e.g. `?ref=tags/x.y.z`) of one of our [latest releases](https://github.com/cloudopsworks/terraform-module-aws-vpc-setup/releases).
+Instead pin to the release tag (e.g. `?ref=vX.Y.Z`) of one of our [latest releases](https://github.com/terraform-module-aws-elasticbeanstalk-deploy/releases).
 
 
 File Format recommended for inputs:
@@ -206,8 +220,80 @@ tags: {}
 # TAG2: value2
 ```
 
+## Quick Start
+
+1. Create a new Terragrunt configuration file (terragrunt.hcl)
+2. Configure the module source and version:
+   ```hcl
+   terraform {
+     source = "git::https://github.com/cloudopsworks/terraform-module-aws-elasticbeanstalk-deploy.git?ref=v1.0.0"
+   }
+   ```
+3. Set required variables:
+   - environment
+   - runner_set
+   - versions_bucket
+   - beanstalk configuration (solution_stack, application, networking)
+4. Initialize Terragrunt:
+   ```bash
+   terragrunt init
+   ```
+5. Review the plan:
+   ```bash
+   terragrunt plan
+   ```
+6. Apply the configuration:
+   ```bash
+   terragrunt apply
+   ```
 
 
+## Examples
+
+## Basic Terragrunt Configuration
+```hcl
+include "root" {
+  path = find_in_parent_folders()
+}
+
+terraform {
+  source = "git::https://github.com/cloudopsworks/terraform-module-aws-elasticbeanstalk-deploy.git?ref=v1.0.0"
+}
+
+inputs = {
+  environment = "dev"
+  runner_set = "dev-runner"
+  versions_bucket = "my-versions-bucket"
+
+  dns = {
+    enabled = true
+    private_zone = false
+    domain_name = "example.com"
+    alias_prefix = "myapp"
+  }
+
+  beanstalk = {
+    solution_stack = "^64bit Amazon Linux 2 (.*) Node.js 18 AL2 (.*)$"
+    application = "myapp"
+
+    load_balancer = {
+      public = true
+      ssl_certificate_id = "arn:aws:acm:region:account:certificate/certificate-id"
+    }
+
+    instance = {
+      instance_port = 8080
+      enable_spot = true
+      server_types = ["t3.micro", "t3.small"]
+    }
+
+    networking = {
+      vpc_id = "vpc-12345"
+      private_subnets = ["subnet-1", "subnet-2"]
+    }
+  }
+}
+```
 
 
 
@@ -218,30 +304,31 @@ Available targets:
   help                                Help screen
   help/all                            Display help for all targets
   help/short                          This help short screen
-  lint                                Lint terraform code
+  lint                                Lint terraform/opentofu code
+  tag                                 Tag the current version
 
 ```
 ## Requirements
 
-| Name | Version |
-|------|---------|
+| Name                                                                      | Version |
+|---------------------------------------------------------------------------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.3 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 4.67.0 |
 
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_app"></a> [app](#module\_app) | github.com/cloudopsworks/terraform-aws-beanstalk-deploy.git// | develop |
+| <a name="module_app"></a> [app](#module\_app) | cloudopsworks/beanstalk-deploy/aws | 1.1.2 |
 | <a name="module_app_dns_shared"></a> [app\_dns\_shared](#module\_app\_dns\_shared) | cloudopsworks/beanstalk-dns/aws | 1.0.5 |
 | <a name="module_dns"></a> [dns](#module\_dns) | cloudopsworks/beanstalk-dns/aws | 1.0.5 |
 | <a name="module_tags"></a> [tags](#module\_tags) | cloudopsworks/tags/local | 1.0.9 |
-| <a name="module_version"></a> [version](#module\_version) | cloudopsworks/beanstalk-version/aws | 1.0.15 |
+| <a name="module_version"></a> [version](#module\_version) | cloudopsworks/beanstalk-version/aws | 1.5.0 |
 
 ## Resources
 
@@ -270,12 +357,13 @@ Available targets:
 | <a name="input_alarms"></a> [alarms](#input\_alarms) | Alarms configuration for the environment | `any` | `{}` | no |
 | <a name="input_api_gateway"></a> [api\_gateway](#input\_api\_gateway) | API Gateway configuration for the environment | `any` | `{}` | no |
 | <a name="input_beanstalk"></a> [beanstalk](#input\_beanstalk) | Beanstalk environment configuration | `any` | n/a | yes |
+| <a name="input_bucket_path"></a> [bucket\_path](#input\_bucket\_path) | Path to the S3 bucket | `string` | `""` | no |
 | <a name="input_dns"></a> [dns](#input\_dns) | DNS configuration for environment | `any` | `{}` | no |
 | <a name="input_extra_tags"></a> [extra\_tags](#input\_extra\_tags) | n/a | `map(string)` | `{}` | no |
 | <a name="input_is_hub"></a> [is\_hub](#input\_is\_hub) | Establish this is a HUB or spoke configuration | `bool` | `false` | no |
 | <a name="input_logs_bucket"></a> [logs\_bucket](#input\_logs\_bucket) | S3 bucket for application logs | `string` | n/a | yes |
 | <a name="input_namespace"></a> [namespace](#input\_namespace) | Environment namespace | `string` | n/a | yes |
-| <a name="input_org"></a> [org](#input\_org) | n/a | <pre>object({<br>    organization_name = string<br>    organization_unit = string<br>    environment_type  = string<br>    environment_name  = string<br>  })</pre> | n/a | yes |
+| <a name="input_org"></a> [org](#input\_org) | n/a | <pre>object({<br/>    organization_name = string<br/>    organization_unit = string<br/>    environment_type  = string<br/>    environment_name  = string<br/>  })</pre> | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | AWS region | `string` | `"us-east-1"` | no |
 | <a name="input_release"></a> [release](#input\_release) | Release configuration | `any` | n/a | yes |
 | <a name="input_repository_owner"></a> [repository\_owner](#input\_repository\_owner) | GitHub repository owner | `string` | n/a | yes |
@@ -293,7 +381,7 @@ No outputs.
 
 **Got a question?** We got answers. 
 
-File a GitHub [issue](https://github.com/cloudopsworks/terraform-module-aws-vpc-setup/issues), send us an [email][email] or join our [Slack Community][slack].
+File a GitHub [issue](https://github.com/terraform-module-aws-elasticbeanstalk-deploy/issues), send us an [email][email] or join our [Slack Community][slack].
 
 [![README Commercial Support][readme_commercial_support_img]][readme_commercial_support_link]
 
@@ -310,7 +398,7 @@ File a GitHub [issue](https://github.com/cloudopsworks/terraform-module-aws-vpc-
 
 ### Bug Reports & Feature Requests
 
-Please use the [issue tracker](https://github.com/cloudopsworks/terraform-module-aws-vpc-setup/issues) to report any bugs or file feature requests.
+Please use the [issue tracker](https://github.com/terraform-module-aws-elasticbeanstalk-deploy/issues) to report any bugs or file feature requests.
 
 ### Developing
 
@@ -319,7 +407,7 @@ Please use the [issue tracker](https://github.com/cloudopsworks/terraform-module
 
 ## Copyrights
 
-Copyright © 2024-2024 [Cloud Ops Works LLC](https://cloudops.works)
+Copyright © 2024-2025 [Cloud Ops Works LLC](https://cloudops.works)
 
 
 
@@ -377,31 +465,31 @@ This project is maintained by [Cloud Ops Works LLC][website].
 [![Beacon][beacon]][website]
 
   [logo]: https://cloudops.works/logo-300x69.svg
-  [docs]: https://cowk.io/docs?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=docs
-  [website]: https://cowk.io/homepage?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=website
-  [github]: https://cowk.io/github?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=github
-  [jobs]: https://cowk.io/jobs?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=jobs
-  [hire]: https://cowk.io/hire?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=hire
-  [slack]: https://cowk.io/slack?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=slack
-  [linkedin]: https://cowk.io/linkedin?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=linkedin
-  [twitter]: https://cowk.io/twitter?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=twitter
-  [testimonial]: https://cowk.io/leave-testimonial?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=testimonial
-  [office_hours]: https://cloudops.works/office-hours?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=office_hours
-  [newsletter]: https://cowk.io/newsletter?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=newsletter
-  [email]: https://cowk.io/email?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=email
-  [commercial_support]: https://cowk.io/commercial-support?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=commercial_support
-  [we_love_open_source]: https://cowk.io/we-love-open-source?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=we_love_open_source
-  [terraform_modules]: https://cowk.io/terraform-modules?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=terraform_modules
+  [docs]: https://cowk.io/docs?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=docs
+  [website]: https://cowk.io/homepage?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=website
+  [github]: https://cowk.io/github?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=github
+  [jobs]: https://cowk.io/jobs?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=jobs
+  [hire]: https://cowk.io/hire?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=hire
+  [slack]: https://cowk.io/slack?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=slack
+  [linkedin]: https://cowk.io/linkedin?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=linkedin
+  [twitter]: https://cowk.io/twitter?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=twitter
+  [testimonial]: https://cowk.io/leave-testimonial?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=testimonial
+  [office_hours]: https://cloudops.works/office-hours?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=office_hours
+  [newsletter]: https://cowk.io/newsletter?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=newsletter
+  [email]: https://cowk.io/email?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=email
+  [commercial_support]: https://cowk.io/commercial-support?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=commercial_support
+  [we_love_open_source]: https://cowk.io/we-love-open-source?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=we_love_open_source
+  [terraform_modules]: https://cowk.io/terraform-modules?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=terraform_modules
   [readme_header_img]: https://cloudops.works/readme/header/img
-  [readme_header_link]: https://cloudops.works/readme/header/link?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=readme_header_link
+  [readme_header_link]: https://cloudops.works/readme/header/link?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=readme_header_link
   [readme_footer_img]: https://cloudops.works/readme/footer/img
-  [readme_footer_link]: https://cloudops.works/readme/footer/link?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=readme_footer_link
+  [readme_footer_link]: https://cloudops.works/readme/footer/link?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=readme_footer_link
   [readme_commercial_support_img]: https://cloudops.works/readme/commercial-support/img
-  [readme_commercial_support_link]: https://cloudops.works/readme/commercial-support/link?utm_source=github&utm_medium=readme&utm_campaign=cloudopsworks/terraform-module-aws-vpc-setup&utm_content=readme_commercial_support_link
-  [share_twitter]: https://twitter.com/intent/tweet/?text=Terraform+Transit+Gateway+Module&url=https://github.com/cloudopsworks/terraform-module-aws-vpc-setup
-  [share_linkedin]: https://www.linkedin.com/shareArticle?mini=true&title=Terraform+Transit+Gateway+Module&url=https://github.com/cloudopsworks/terraform-module-aws-vpc-setup
-  [share_reddit]: https://reddit.com/submit/?url=https://github.com/cloudopsworks/terraform-module-aws-vpc-setup
-  [share_facebook]: https://facebook.com/sharer/sharer.php?u=https://github.com/cloudopsworks/terraform-module-aws-vpc-setup
-  [share_googleplus]: https://plus.google.com/share?url=https://github.com/cloudopsworks/terraform-module-aws-vpc-setup
-  [share_email]: mailto:?subject=Terraform+Transit+Gateway+Module&body=https://github.com/cloudopsworks/terraform-module-aws-vpc-setup
-  [beacon]: https://ga-beacon.cloudops.works/G-7XWMFVFXZT/cloudopsworks/terraform-module-aws-vpc-setup?pixel&cs=github&cm=readme&an=terraform-module-aws-vpc-setup
+  [readme_commercial_support_link]: https://cloudops.works/readme/commercial-support/link?utm_source=github&utm_medium=readme&utm_campaign=terraform-module-aws-elasticbeanstalk-deploy&utm_content=readme_commercial_support_link
+  [share_twitter]: https://twitter.com/intent/tweet/?text=Terraform+Elastic+Beanstalk+Application+Deployment+Module&url=https://github.com/terraform-module-aws-elasticbeanstalk-deploy
+  [share_linkedin]: https://www.linkedin.com/shareArticle?mini=true&title=Terraform+Elastic+Beanstalk+Application+Deployment+Module&url=https://github.com/terraform-module-aws-elasticbeanstalk-deploy
+  [share_reddit]: https://reddit.com/submit/?url=https://github.com/terraform-module-aws-elasticbeanstalk-deploy
+  [share_facebook]: https://facebook.com/sharer/sharer.php?u=https://github.com/terraform-module-aws-elasticbeanstalk-deploy
+  [share_googleplus]: https://plus.google.com/share?url=https://github.com/terraform-module-aws-elasticbeanstalk-deploy
+  [share_email]: mailto:?subject=Terraform+Elastic+Beanstalk+Application+Deployment+Module&body=https://github.com/terraform-module-aws-elasticbeanstalk-deploy
+  [beacon]: https://ga-beacon.cloudops.works/G-7XWMFVFXZT/terraform-module-aws-elasticbeanstalk-deploy?pixel&cs=github&cm=readme&an=terraform-module-aws-elasticbeanstalk-deploy
