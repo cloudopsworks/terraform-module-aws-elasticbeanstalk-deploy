@@ -315,7 +315,7 @@ Available targets:
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 6.4 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.100.0 |
 
 ## Modules
 
@@ -382,21 +382,19 @@ File a GitHub [issue](https://github.com/terraform-module-aws-elasticbeanstalk-d
 
 
 ## DevOps Tools
-[]()
+[Our Products](https://cloudopsworks.co/products/)
+[CI/CD Blueprint](https://cloudopsworks.co/cicd-blueprint/)
+[Open Source](https://cloudopsworks.co/open-source/)
+
 ## Slack Community
 
 
 ## Newsletter
-
-## Office Hours
-
-## Contributing
+[Resources Directory](https://cloudopsworks.co/resources/)
 
 ### Bug Reports & Feature Requests
 
 Please use the [issue tracker](https://github.com/terraform-module-aws-elasticbeanstalk-deploy/issues) to report any bugs or file feature requests.
-
-### Developing
 
 
 
@@ -487,4 +485,4 @@ This project is maintained by [Cloud Ops Works LLC][website].
   [share_reddit]: https://reddit.com/submit/?url=https://github.com/terraform-module-aws-elasticbeanstalk-deploy
   [share_facebook]: https://facebook.com/sharer/sharer.php?u=https://github.com/terraform-module-aws-elasticbeanstalk-deploy
   [share_email]: mailto:?subject=Terraform+Elastic+Beanstalk+Application+Deployment+Module&body=https://github.com/terraform-module-aws-elasticbeanstalk-deploy
-  [beacon]: https://ga-beacon.cloudospworks.co/G-QMZVYYN2VN/terraform-module-aws-elasticbeanstalk-deploy?pixel&cs=github&cm=readme&an=terraform-module-aws-elasticbeanstalk-deploy
+  [beacon]: https://ga-beacon.cloudopsworks.co/G-QMZVYYN2VN/terraform-module-aws-elasticbeanstalk-deploy?pixel&cs=github&cm=readme&an=terraform-module-aws-elasticbeanstalk-deploy
