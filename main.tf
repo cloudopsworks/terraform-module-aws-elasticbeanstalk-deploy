@@ -1,5 +1,5 @@
 ##
-# (c) 2021-2025
+# (c) 2021-2026
 #     Cloud Ops Works LLC - https://cloudops.works/
 #     Find us on:
 #       GitHub: https://github.com/cloudopsworks
@@ -26,7 +26,7 @@ locals {
 module "dns" {
   count                    = try(var.beanstalk.load_balancer.shared.enabled, false) == false && try(var.dns.enabled, false) ? 1 : 0
   source                   = "cloudopsworks/beanstalk-dns/aws"
-  version                  = "1.0.5"
+  version                  = "1.1.0"
   region                   = var.region
   sts_assume_role          = var.sts_assume_role
   release_name             = var.release.name
@@ -42,7 +42,7 @@ module "dns" {
 
 module "version" {
   source  = "cloudopsworks/beanstalk-version/aws"
-  version = "1.5.0"
+  version = "1.6.1"
   # source = "github.com/cloudopsworks/terraform-aws-beanstalk-version.git//?ref=release-v5"
 
   region          = var.region
@@ -60,9 +60,8 @@ module "version" {
 }
 
 module "app" {
-  # source                         = "cloudopsworks/beanstalk-deploy/aws"
-  # version                        = "1.1.4"
-  source                         = "git::github.com/cloudopsworks/terraform-aws-beanstalk-deploy.git//?ref=v1.1.4"
+  source                         = "cloudopsworks/beanstalk-deploy/aws"
+  version                        = "1.2.0"
   region                         = var.region
   sts_assume_role                = var.sts_assume_role
   release_name                   = var.release.name

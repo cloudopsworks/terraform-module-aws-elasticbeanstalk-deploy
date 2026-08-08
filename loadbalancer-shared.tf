@@ -1,5 +1,5 @@
 ##
-# (c) 2021-2025
+# (c) 2021-2026
 #     Cloud Ops Works LLC - https://cloudops.works/
 #     Find us on:
 #       GitHub: https://github.com/cloudopsworks
@@ -16,7 +16,7 @@ data "aws_lb" "shared_lb" {
 module "app_dns_shared" {
   count                    = try(var.beanstalk.load_balancer.shared.enabled, false) && try(var.beanstalk.load_balancer.shared.dns.enabled, false) ? 1 : 0
   source                   = "cloudopsworks/beanstalk-dns/aws"
-  version                  = "1.0.5"
+  version                  = "1.1.0"
   region                   = var.region
   sts_assume_role          = var.sts_assume_role
   release_name             = var.release.name

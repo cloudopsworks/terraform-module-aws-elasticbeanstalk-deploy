@@ -12,7 +12,7 @@
 
 # Terraform Elastic Beanstalk Application Deployment Module
 
-
+ [![Latest Release](https://img.shields.io/github/release/cloudopsworks/terraform-module-aws-elasticbeanstalk-deploy.svg?style=for-the-badge)](https://github.com/cloudopsworks/terraform-module-aws-elasticbeanstalk-deploy/releases/latest) [![Last Updated](https://img.shields.io/github/last-commit/cloudopsworks/terraform-module-aws-elasticbeanstalk-deploy.svg?style=for-the-badge)](https://github.com/cloudopsworks/terraform-module-aws-elasticbeanstalk-deploy/commits)
 
 
 Deployment module for Elastic Beanstalk applications through the [Base Application Module](https://github.com/cloudopsworks/base-app-template.git). This module provides comprehensive configuration options for AWS Elastic Beanstalk deployments including load balancer setup, instance configurations, networking, DNS management, monitoring and alarms integration.
@@ -56,6 +56,19 @@ This Terraform module simplifies AWS Elastic Beanstalk application deployments b
 - Custom health checks and SSL configuration
 - Comprehensive tag management
 
+## Composed Modules
+
+The deployment is assembled from the following registry modules:
+
+| Module                             | Version  | Purpose                                                        |
+|------------------------------------|----------|----------------------------------------------------------------|
+| `cloudopsworks/beanstalk-version/aws` | `1.6.1` | Uploads and registers the application version bundle.          |
+| `cloudopsworks/beanstalk-deploy/aws`  | `1.2.0` | Creates the Elastic Beanstalk environment and its load balancer. |
+| `cloudopsworks/beanstalk-dns/aws`     | `1.1.0` | Manages the Route53 alias record for the environment.          |
+| `cloudopsworks/tags/local`            | `1.0.10`| Builds the organization-wide common tag set.                   |
+
+The AWS provider is constrained to `~> 6.35`.
+
 ## Usage
 
 
@@ -63,39 +76,98 @@ This Terraform module simplifies AWS Elastic Beanstalk application deployments b
 Instead pin to the release tag (e.g. `?ref=vX.Y.Z`) of one of our [latest releases](https://github.com/terraform-module-aws-elasticbeanstalk-deploy/releases).
 
 
-File Format recommended for inputs:
+Deployments are bootstrapped with the Terragrunt `scaffold` command, which reads
+`.boilerplate/boilerplate.yml` from this repository and writes `terragrunt.hcl`,
+`inputs.yaml` and `local-tags.json` into the current directory.
+See the [Terragrunt scaffold reference](https://docs.terragrunt.com/reference/cli/commands/scaffold).
+
+```sh
+# 1. Create and enter the target deployment directory
+mkdir -p <environment>/<region>/<spoke>/elasticbeanstalk-deploy
+cd <environment>/<region>/<spoke>/elasticbeanstalk-deploy
+
+# 2. Scaffold the module (do NOT use --working-dir)
+terragrunt scaffold github.com/cloudopsworks/terraform-module-aws-elasticbeanstalk-deploy
+
+# 3. Edit inputs.yaml with deployment-specific values
+#    (all keys and comments are pre-populated from .boilerplate/inputs.yaml)
+vi inputs.yaml
+
+# 4. Apply
+terragrunt apply
+```
+
+Scaffold prompts for the generic boilerplate variables:
+
+| Variable  | Type   | Default | Description                    |
+|-----------|--------|---------|--------------------------------|
+| `is_hub`  | bool   | `false` | Is this a hub configuration?   |
+| `tags`    | map    | `{}`    | Deployment level tags.         |
+
+## Generated `inputs.yaml`
+
 ```yaml
-environment: "dev|uat|prod|demo"
-runner_set: "RUNNER-ENV"
-versions_bucket: "VERSIONS_BUCKET"
-#logs_bucket: "LOGS_BUCKET"
-#node_extra_env:
+# Module configuration
+#
+# Elastic Beanstalk application deployment inputs.
+# Every key below maps to a variable declared in variables-eb.tf.
+# Keys supplied by the Terragrunt hierarchy (is_hub, spoke_def, org, extra_tags)
+# are not listed here - they are wired automatically by terragrunt.hcl.
+
+## Deployment target
+region: "us-east-1"           # (Optional) AWS region where the environment is deployed. Default: "us-east-1"
+#sts_assume_role: ""          # (Optional) Role ARN assumed by the deployment modules. Default: null
+
+## Release identity
+namespace: "dev"              # (Required) Environment namespace, appended to the release name to build the environment name.
+repository_owner: "myorg"     # (Required) GitHub organization owning the application repository.
+release:                      # (Required) Release definition, normally supplied by the base application pipeline.
+  name: "myapp"               # (Required) Release name, used as the Beanstalk environment prefix.
+  #qualifier: "blue"          # (Optional) Blue/green qualifier. Possible values: "blue", "green" or empty. Default: ""
+  source:                     # (Required) Source artifact reference.
+    name: "myapp"             # (Required) Artifact name.
+    version: "1.0.0"          # (Required) Artifact version, used to build the version label.
+
+## Artifact storage
+versions_bucket: "my-versions-bucket" # (Required) S3 bucket holding the application version bundles.
+logs_bucket: "my-logs-bucket"         # (Required) S3 bucket receiving the load balancer access logs.
+#absolute_path: ""                    # (Optional) Absolute path where the .values_hash file is located. Default: "" (current directory)
+#bucket_path: ""                      # (Optional) Key of the version bundle inside versions_bucket. Default: "" (computed from the release)
+
+## DNS - (Optional) default: {}
 dns:
-  enabled: true
-  private_zone: false
-  domain_name: DOMAIN_NAME
-  alias_prefix: ALIAS_PREFIX
+  enabled: true               # (Optional) Enable Route53 record management. Default: false
+  private_zone: false         # (Optional) Look up the hosted zone as private. Default: false
+  domain_name: "example.com"  # (Required when enabled) Route53 hosted zone name.
+  alias_prefix: "myapp"       # (Required when enabled) Record prefix prepended to domain_name.
+
+## CloudWatch alarms - (Optional) default: {}
 alarms:
-  enabled: false
-  threshold: 15
-  period: 120
-  evaluation_periods: 2
-  destination_topic: DESTINATION_SNS
+  enabled: false              # (Optional) Create the EnvironmentHealth metric alarm. Default: false
+  #threshold: 15              # (Required when enabled) EnvironmentHealth value that triggers the alarm.
+  #period: 120                # (Required when enabled) Evaluation period in seconds.
+  #evaluation_periods: 2      # (Required when enabled) Number of periods before alarming.
+  #destination_topic: ""      # (Required when enabled) Name of an existing SNS topic to notify.
+
+## API Gateway VPC Link - (Optional) default: {}
 api_gateway:
-  enabled: false
-  vpc_link:
-    #link_name: VPC_LINK_NAME # Optional: only valid when existing link is NOT used
-    use_existing: false
-    #lb_name: LOAD_BALANCER_NAME
-    #listener_port: 8443
-    #to_port: 443
-    #health: # Enable this and below to change the type of healthcheck
-    #  enabled: true
-    #  protocol: HTTPS
-    #  http_status: "200-401"
-    #  path: "/"
+  enabled: false              # (Optional) Enable the API Gateway VPC Link integration. Default: false
+  #vpc_link:                  # (Required when enabled) VPC Link settings.
+  #  use_existing: false      # (Optional) Attach to an existing NLB instead of creating one. Default: false
+  #  link_name: ""            # (Optional) VPC Link name, only valid when use_existing = false. Default: "api-gw-nlb-<release>-<namespace>-nlb-link"
+  #  lb_name: ""              # (Required when use_existing = true) Name of the existing NLB.
+  #  listener_port: 8443      # (Required when use_existing = true) Listener port created on the existing NLB.
+  #  to_port: 443             # (Optional) Target group port. Default: listener_port
+  #  health:                  # (Optional) Target group health check overrides.
+  #    enabled: true          # (Optional) Enable the health check. Default: false
+  #    protocol: "HTTPS"      # (Optional) Possible values: TCP, HTTP, HTTPS. Default: "TCP"
+  #    http_status: "200-401" # (Optional) Success status matcher. Default: ""
+  #    path: "/"              # (Optional) Health check path. Default: ""
+
+## Elastic Beanstalk environment - (Required)
 beanstalk:
-  # Solution stack is one of:
+  # solution_stack is a regular expression matched against the available AWS solution stacks,
+  # or a complete stack name to stick the environment to a specific version. Common patterns:
   #   java      = "^64bit Amazon Linux 2 (.*) Corretto 8(.*)$"
   #   java11    = "^64bit Amazon Linux 2 (.*) Corretto 11(.*)$"
   #   java17    = "^64bit Amazon Linux 2 (.*) Corretto 17(.*)$"
@@ -106,188 +178,318 @@ beanstalk:
   #   go        = "^64bit Amazon Linux 2 (.*) Go (.*)$"
   #   docker    = "^64bit Amazon Linux 2 (.*) Docker (.*)$"
   #   docker-m  = "^64bit Amazon Linux 2 (.*) Multi-container Docker (.*)$"
-  #   java-amz1 = "^64bit Amazon Linux (.*)$ running Java 8(.*)$"
-  #   node-amz1 = "^64bit Amazon Linux (.*)$ running Node.js(.*)$"
-  # Can specify complete name for certain environments to Stick the stack to a specific version.
-  solution_stack: SOLUTION_STACK
-  application: APPLICATION
-  iam:
-    instance_profile: INSTANCE_PROFILE
-    service_role: SERVICE_ROLE
-  load_balancer:
-    # Shared Load Balancer configuration subset
-    #shared:
-    #  dns:
-    #    enabled: false
-    #  enabled: false
-    #  name: SHARED_LB_NAME
-    #  weight: 100
-    public: true
-    ssl_certificate_id: SSL_CERTIFICATE_ID
-    ssl_policy: ELBSecurityPolicy-2016-08
-    alias: LOAD_BALANCER_ALIAS
-  instance:
-    instance_port: 8080
-    enable_spot: true
-    default_retention: 90
-    volume_size: 20
-    volume_type: gp2
-    ec2_key: EC2_KEY
-    ami_id: AMI_ID
-    server_types:
-      - SERVER TYPE1
-      - SERVER TYPE2
-    #pool: # Instance Pool elasticity minimum & maximum number of instances
-    #  min: 1
-    #  max: 1
-  networking:
-    private_subnets: []
-    #      - SUBNET_ID
-    #      - SUBNET_ID2
-    public_subnets: []
-    #      - SUBNET_ID3
-    #      - SUBNET_ID4
-    vpc_id: VPC_ID
-  ##
-  # Optional variable for mapping ports to backend ports:
-  port_mappings: []
-  #    - name: default
-  #      from_port: 80
-  #      to_port: 8081
-  #      protocol: HTTP
-  #    - name: port443
-  #      from_port: 443
-  #      to_port: 8443
-  #      protocol: HTTPS
-  #      backend_protocol: HTTPS
-  #      health_check: # for custom target group
-  #        enabled: true
-  #        protocol: HTTPS
-  #        port: 8443 | traffic-port
-  #        matcher: "200-302"
-  #        path: "/"
-  #        unhealthy_threshold: 2
-  #        healthy_threshold: 2
-  #        timeout: 5
-  #        interval: 30
-  #      # Rules are required if custom_shared_rules=false or not set
-  #      rules:
-  #        - RULENAME
+  solution_stack: "^64bit Amazon Linux 2 (.*) Corretto 17(.*)$" # (Required) Solution stack name or regex.
+  application: "myapp"                # (Required) Existing Elastic Beanstalk application name.
+  #wait_for_ready_timeout: "20m"      # (Optional) Timeout waiting for the environment to become ready. Default: "20m"
+  #custom_shared_rules: false         # (Optional) When true, rule_mappings override the Beanstalk shared LB configuration. Default: false
 
-  ##
-  # Optional variable for adding extra tags to the environment
-  extra_tags: {}
-  #    key: value
-  #    key2: value2
-  extra_settings: []
-  #    - name: SETTING_NAME
-  #      namespace: aws:NAMESPACE
-  #      resource: ""
-  #      value: "<VALUE>"
-  #    - name: SETTING_NAME_2
-  #      namespace: aws:NAMESPACE_2
-  #      resource: ""
-  #      value: "<VALUE>"
-  ##
-  # Enable custom shared Rules where below rule mappings mandate over elastic beanstalk configuration.
-  #custom_shared_rules: true
-  ##
-  # Optional Variable for mapping rules for shared Load Balancer
-  rule_mappings: []
-#    - name: RULENAME
-#      process: port_mapping_process
-#      host: host.address.com,host.address2.com
-#      path: /path
-#      priority: 100
-#      path_patterns:
-#        - /path
-#      query_strings:
-#        - query1=value1
-#        - query2=value2
-#      http_headers:
-#        - name: HEADERNAME
-#          values: ["value1", "valuepattern*"]
-#      source_ips:
-#        - IP1
-#        - IP2
-tags: {}
-# TAG1: value1
-# TAG2: value2
+  #iam:                               # (Optional) IAM overrides, AWS defaults are used when omitted.
+  #  instance_profile: ""             # (Optional) EC2 instance profile name. Default: null
+  #  service_role: ""                 # (Optional) Beanstalk service role name. Default: null
+
+  load_balancer:                                    # (Required) Load balancer configuration.
+    public: true                                    # (Required) Place the load balancer on the public subnets.
+    ssl_certificate_id: "arn:aws:acm:us-east-1:123456789012:certificate/abcd-1234" # (Required) ACM certificate ARN for the HTTPS listener.
+    #ssl_policy: "ELBSecurityPolicy-2016-08"        # (Optional) Listener SSL policy. Default: null (AWS default)
+    #alias: ""                                      # (Optional) Load balancer alias name. Default: null
+    #shared:                                        # (Optional) Attach the environment to a shared load balancer.
+    #  enabled: false                               # (Optional) Enable shared load balancer mode. Default: false
+    #  name: ""                                     # (Required when enabled) Name of the existing shared ALB.
+    #  weight: 100                                  # (Optional) Traffic weight for the environment. Default: 100
+    #  dns:                                         # (Optional) DNS record pointing to the shared load balancer.
+    #    enabled: false                             # (Optional) Create the alias record on the shared LB. Default: false
+
+  instance:                           # (Required) EC2 instance configuration.
+    instance_port: 8080               # (Required) Port the application listens on.
+    enable_spot: true                 # (Required) Enable spot instances for cost optimization.
+    default_retention: 90             # (Required) CloudWatch log retention in days.
+    volume_size: 20                   # (Required) Root volume size in GB.
+    volume_type: "gp2"                # (Required) Root volume type. Possible values: gp2, gp3, io1, standard.
+    server_types:                     # (Required) Ordered list of instance types offered to the ASG.
+      - "t3.micro"
+      - "t3.small"
+    #ec2_key: ""                      # (Optional) EC2 key pair name. Default: null
+    #ami_id: ""                       # (Optional) Custom AMI id. Default: null (platform AMI)
+    #pool:                            # (Optional) Auto scaling group elasticity.
+    #  min: 1                         # (Optional) Minimum number of instances. Default: 1
+    #  max: 1                         # (Optional) Maximum number of instances. Default: 1
+
+  networking:                         # (Required) Network placement.
+    vpc_id: "vpc-0123456789abcdef0"   # (Required) VPC id hosting the environment.
+    private_subnets: []               # (Required) Subnet ids for the instances - may be empty when public.
+    #  - "subnet-0123456789abcdef0"
+    public_subnets: []                # (Required) Subnet ids for the public load balancer - may be empty when private.
+    #  - "subnet-0123456789abcdef1"
+
+  port_mappings: []                   # (Optional) Listener to backend port mappings. Default: []
+  #  - name: "default"                # (Required) Mapping/process name.
+  #    from_port: 80                  # (Required) Listener port.
+  #    to_port: 8081                  # (Required) Backend port.
+  #    protocol: "HTTP"               # (Required) Listener protocol. Possible values: HTTP, HTTPS.
+  #  - name: "port443"
+  #    from_port: 443
+  #    to_port: 8443
+  #    protocol: "HTTPS"
+  #    backend_protocol: "HTTPS"      # (Optional) Backend protocol. Possible values: HTTP, HTTPS. Default: protocol
+  #    health_check:                  # (Optional) Custom target group health check.
+  #      enabled: true                # (Optional) Enable the health check. Default: false
+  #      protocol: "HTTPS"            # (Optional) Possible values: HTTP, HTTPS. Default: backend_protocol
+  #      port: 8443                   # (Optional) Possible values: a port number or "traffic-port". Default: "traffic-port"
+  #      matcher: "200-302"           # (Optional) Success status matcher. Default: "200"
+  #      path: "/"                    # (Optional) Health check path. Default: "/"
+  #      unhealthy_threshold: 2       # (Optional) Failed checks before unhealthy. Default: 2
+  #      healthy_threshold: 2         # (Optional) Successful checks before healthy. Default: 2
+  #      timeout: 5                   # (Optional) Check timeout in seconds. Default: 5
+  #      interval: 30                 # (Optional) Check interval in seconds. Default: 30
+  #    rules:                         # (Required when custom_shared_rules is not set) Names of the rule_mappings applied to this process.
+  #      - "myapp-rule"
+
+  rule_mappings: []                   # (Optional) Listener rules for the shared load balancer. Default: []
+  #  - name: "myapp-rule"             # (Required) Rule name, referenced from port_mappings.rules.
+  #    process: "port443"             # (Required) Target port mapping name.
+  #    host: "host.address.com,host.address2.com" # (Optional) Comma separated host headers to match.
+  #    path: "/path"                  # (Optional) Single path to match.
+  #    priority: 100                  # (Optional) Listener rule priority. Default: assigned by the module
+  #    path_patterns:                 # (Optional) List of path patterns to match.
+  #      - "/path"
+  #    query_strings:                 # (Optional) List of "key=value" query strings to match.
+  #      - "query1=value1"
+  #    http_headers:                  # (Optional) List of header matchers.
+  #      - name: "HEADERNAME"
+  #        values: ["value1", "valuepattern*"]
+  #    source_ips:                    # (Optional) List of CIDR blocks to match.
+  #      - "10.0.0.0/8"
+
+  extra_settings: []                  # (Optional) Raw Beanstalk option settings. Default: []
+  #  - name: "SETTING_NAME"           # (Required) Option name.
+  #    namespace: "aws:NAMESPACE"     # (Required) Option namespace.
+  #    resource: ""                   # (Optional) Option resource. Default: ""
+  #    value: "VALUE"                 # (Required) Option value.
+
+  extra_tags: {}                      # (Optional) Extra tags applied to the Beanstalk environment only. Default: {}
+  #  Tag1: "Value1"
+```
+
+## Generated `terragrunt.hcl`
+
+Scaffold renders the template below; `local.local_vars` carries every key from
+`inputs.yaml` into the `inputs` block, while `is_hub`, `org`, `spoke_def` and
+`extra_tags` are resolved from the Terragrunt hierarchy.
+
+```hcl
+locals {
+  local_vars  = yamldecode(file("./inputs.yaml"))
+  spoke_vars  = yamldecode(file(find_in_parent_folders("spoke-inputs.yaml")))
+  region_vars = yamldecode(file(find_in_parent_folders("region-inputs.yaml")))
+  env_vars    = yamldecode(file(find_in_parent_folders("env-inputs.yaml")))
+  global_vars = yamldecode(file(find_in_parent_folders("global-inputs.yaml")))
+
+  local_tags  = jsondecode(file("./local-tags.json"))
+  spoke_tags  = jsondecode(file(find_in_parent_folders("spoke-tags.json")))
+  region_tags = jsondecode(file(find_in_parent_folders("region-tags.json")))
+  env_tags    = jsondecode(file(find_in_parent_folders("env-tags.json")))
+  global_tags = jsondecode(file(find_in_parent_folders("global-tags.json")))
+
+  tags = merge(
+    local.global_tags,
+    local.env_tags,
+    local.region_tags,
+    local.spoke_tags,
+    local.local_tags
+  )
+}
+
+include "root" {
+  path = find_in_parent_folders("root.hcl")
+}
+
+terraform {
+  source = "github.com/cloudopsworks/terraform-module-aws-elasticbeanstalk-deploy"
+}
+
+inputs = {
+  is_hub    = false
+  org       = local.env_vars.org
+  spoke_def = local.spoke_vars.spoke
+
+  namespace        = local.local_vars.namespace
+  release          = local.local_vars.release
+  beanstalk        = local.local_vars.beanstalk
+  versions_bucket  = local.local_vars.versions_bucket
+  logs_bucket      = local.local_vars.logs_bucket
+  repository_owner = local.local_vars.repository_owner
+
+  dns             = try(local.local_vars.dns, {})
+  alarms          = try(local.local_vars.alarms, {})
+  api_gateway     = try(local.local_vars.api_gateway, {})
+  region          = try(local.local_vars.region, "us-east-1")
+  sts_assume_role = try(local.local_vars.sts_assume_role, null)
+  absolute_path   = try(local.local_vars.absolute_path, "")
+  bucket_path     = try(local.local_vars.bucket_path, "")
+
+  extra_tags = local.tags
+}
 ```
 
 ## Quick Start
 
-1. Create a new Terragrunt configuration file (terragrunt.hcl)
-2. Configure the module source and version:
-   ```hcl
-   terraform {
-     source = "git::https://github.com/cloudopsworks/terraform-module-aws-elasticbeanstalk-deploy.git?ref=v1.0.0"
-   }
+1. Create the deployment directory and scaffold the module:
+   ```sh
+   mkdir -p dev/us-east-1/001/elasticbeanstalk-deploy
+   cd dev/us-east-1/001/elasticbeanstalk-deploy
+   terragrunt scaffold github.com/cloudopsworks/terraform-module-aws-elasticbeanstalk-deploy
    ```
-3. Set required variables:
-   - environment
-   - runner_set
-   - versions_bucket
-   - beanstalk configuration (solution_stack, application, networking)
+2. Answer the scaffold prompts (`is_hub`, `tags`).
+3. Fill in the required keys in the generated `inputs.yaml`:
+   - `namespace`
+   - `repository_owner`
+   - `release` (`name`, `source.name`, `source.version`)
+   - `versions_bucket` and `logs_bucket`
+   - `beanstalk` (`solution_stack`, `application`, `load_balancer`, `instance`, `networking`)
 4. Initialize Terragrunt:
-   ```bash
+   ```sh
    terragrunt init
    ```
 5. Review the plan:
-   ```bash
+   ```sh
    terragrunt plan
    ```
 6. Apply the configuration:
-   ```bash
+   ```sh
    terragrunt apply
    ```
 
 
 ## Examples
 
-## Basic Terragrunt Configuration
-```hcl
-include "root" {
-  path = find_in_parent_folders()
-}
+## Minimal public environment
 
-terraform {
-  source = "git::https://github.com/cloudopsworks/terraform-module-aws-elasticbeanstalk-deploy.git?ref=v1.0.0"
-}
+`inputs.yaml`:
 
-inputs = {
-  environment = "dev"
-  runner_set = "dev-runner"
-  versions_bucket = "my-versions-bucket"
+```yaml
+namespace: "dev"
+repository_owner: "myorg"
+release:
+  name: "myapp"
+  source:
+    name: "myapp"
+    version: "1.0.0"
+versions_bucket: "myorg-versions"
+logs_bucket: "myorg-lb-logs"
+dns:
+  enabled: true
+  private_zone: false
+  domain_name: "example.com"
+  alias_prefix: "myapp"
+beanstalk:
+  solution_stack: "^64bit Amazon Linux 2 (.*) Node.js 18 AL2 (.*)$"
+  application: "myapp"
+  load_balancer:
+    public: true
+    ssl_certificate_id: "arn:aws:acm:us-east-1:123456789012:certificate/abcd-1234"
+  instance:
+    instance_port: 8080
+    enable_spot: true
+    default_retention: 90
+    volume_size: 20
+    volume_type: "gp2"
+    server_types:
+      - "t3.micro"
+      - "t3.small"
+  networking:
+    vpc_id: "vpc-0123456789abcdef0"
+    private_subnets:
+      - "subnet-0123456789abcdef0"
+      - "subnet-0123456789abcdef1"
+    public_subnets:
+      - "subnet-0123456789abcdef2"
+      - "subnet-0123456789abcdef3"
+```
 
-  dns = {
-    enabled = true
-    private_zone = false
-    domain_name = "example.com"
-    alias_prefix = "myapp"
-  }
+## Shared load balancer with listener rules
 
-  beanstalk = {
-    solution_stack = "^64bit Amazon Linux 2 (.*) Node.js 18 AL2 (.*)$"
-    application = "myapp"
+```yaml
+namespace: "prod"
+repository_owner: "myorg"
+release:
+  name: "myapp"
+  qualifier: "green"
+  source:
+    name: "myapp"
+    version: "2.3.1"
+versions_bucket: "myorg-versions"
+logs_bucket: "myorg-lb-logs"
+beanstalk:
+  solution_stack: "^64bit Amazon Linux 2 (.*) Corretto 17(.*)$"
+  application: "myapp"
+  custom_shared_rules: true
+  load_balancer:
+    public: true
+    ssl_certificate_id: "arn:aws:acm:us-east-1:123456789012:certificate/abcd-1234"
+    shared:
+      enabled: true
+      name: "prod-shared-alb"
+      weight: 100
+      dns:
+        enabled: true
+  instance:
+    instance_port: 8080
+    enable_spot: false
+    default_retention: 90
+    volume_size: 30
+    volume_type: "gp3"
+    server_types:
+      - "m6i.large"
+    pool:
+      min: 2
+      max: 6
+  networking:
+    vpc_id: "vpc-0123456789abcdef0"
+    private_subnets:
+      - "subnet-0123456789abcdef0"
+    public_subnets:
+      - "subnet-0123456789abcdef2"
+  port_mappings:
+    - name: "port443"
+      from_port: 443
+      to_port: 8443
+      protocol: "HTTPS"
+      backend_protocol: "HTTPS"
+      rules:
+        - "myapp-host-rule"
+  rule_mappings:
+    - name: "myapp-host-rule"
+      process: "port443"
+      host: "myapp.example.com"
+      priority: 100
+```
 
-    load_balancer = {
-      public = true
-      ssl_certificate_id = "arn:aws:acm:region:account:certificate/certificate-id"
-    }
+## API Gateway VPC Link over an existing NLB
 
-    instance = {
-      instance_port = 8080
-      enable_spot = true
-      server_types = ["t3.micro", "t3.small"]
-    }
+```yaml
+api_gateway:
+  enabled: true
+  vpc_link:
+    use_existing: true
+    lb_name: "shared-api-nlb"
+    listener_port: 8443
+    to_port: 443
+    health:
+      enabled: true
+      protocol: "HTTPS"
+      http_status: "200-401"
+      path: "/"
+```
 
-    networking = {
-      vpc_id = "vpc-12345"
-      private_subnets = ["subnet-1", "subnet-2"]
-    }
-  }
-}
+## CloudWatch alarm on environment health
+
+```yaml
+alarms:
+  enabled: true
+  threshold: 15
+  period: 120
+  evaluation_periods: 2
+  destination_topic: "ops-alerts"
 ```
 
 
@@ -309,23 +511,23 @@ Available targets:
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.3 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 6.4 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 6.35 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 6.4 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 6.35 |
 
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_app"></a> [app](#module\_app) | git::github.com/cloudopsworks/terraform-aws-beanstalk-deploy.git// | v1.1.4 |
-| <a name="module_app_dns_shared"></a> [app\_dns\_shared](#module\_app\_dns\_shared) | cloudopsworks/beanstalk-dns/aws | 1.0.5 |
-| <a name="module_dns"></a> [dns](#module\_dns) | cloudopsworks/beanstalk-dns/aws | 1.0.5 |
-| <a name="module_tags"></a> [tags](#module\_tags) | cloudopsworks/tags/local | 1.0.9 |
-| <a name="module_version"></a> [version](#module\_version) | cloudopsworks/beanstalk-version/aws | 1.5.0 |
+| <a name="module_app"></a> [app](#module\_app) | cloudopsworks/beanstalk-deploy/aws | 1.2.0 |
+| <a name="module_app_dns_shared"></a> [app\_dns\_shared](#module\_app\_dns\_shared) | cloudopsworks/beanstalk-dns/aws | 1.1.0 |
+| <a name="module_dns"></a> [dns](#module\_dns) | cloudopsworks/beanstalk-dns/aws | 1.1.0 |
+| <a name="module_tags"></a> [tags](#module\_tags) | cloudopsworks/tags/local | 1.0.10 |
+| <a name="module_version"></a> [version](#module\_version) | cloudopsworks/beanstalk-version/aws | 1.6.1 |
 
 ## Resources
 
@@ -350,23 +552,23 @@ Available targets:
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_absolute_path"></a> [absolute\_path](#input\_absolute\_path) | Absolute path to the configuration files | `string` | `""` | no |
-| <a name="input_alarms"></a> [alarms](#input\_alarms) | Alarms configuration for the environment | `any` | `{}` | no |
-| <a name="input_api_gateway"></a> [api\_gateway](#input\_api\_gateway) | API Gateway configuration for the environment | `any` | `{}` | no |
-| <a name="input_beanstalk"></a> [beanstalk](#input\_beanstalk) | Beanstalk environment configuration | `any` | n/a | yes |
-| <a name="input_bucket_path"></a> [bucket\_path](#input\_bucket\_path) | Path to the S3 bucket | `string` | `""` | no |
-| <a name="input_dns"></a> [dns](#input\_dns) | DNS configuration for environment | `any` | `{}` | no |
-| <a name="input_extra_tags"></a> [extra\_tags](#input\_extra\_tags) | n/a | `map(string)` | `{}` | no |
-| <a name="input_is_hub"></a> [is\_hub](#input\_is\_hub) | Establish this is a HUB or spoke configuration | `bool` | `false` | no |
-| <a name="input_logs_bucket"></a> [logs\_bucket](#input\_logs\_bucket) | S3 bucket for application logs | `string` | n/a | yes |
-| <a name="input_namespace"></a> [namespace](#input\_namespace) | Environment namespace | `string` | n/a | yes |
-| <a name="input_org"></a> [org](#input\_org) | n/a | <pre>object({<br/>    organization_name = string<br/>    organization_unit = string<br/>    environment_type  = string<br/>    environment_name  = string<br/>  })</pre> | n/a | yes |
-| <a name="input_region"></a> [region](#input\_region) | AWS region | `string` | `"us-east-1"` | no |
-| <a name="input_release"></a> [release](#input\_release) | Release configuration | `any` | n/a | yes |
-| <a name="input_repository_owner"></a> [repository\_owner](#input\_repository\_owner) | GitHub repository owner | `string` | n/a | yes |
-| <a name="input_spoke_def"></a> [spoke\_def](#input\_spoke\_def) | n/a | `string` | `"001"` | no |
-| <a name="input_sts_assume_role"></a> [sts\_assume\_role](#input\_sts\_assume\_role) | STS Assume Role ARN | `string` | `null` | no |
-| <a name="input_versions_bucket"></a> [versions\_bucket](#input\_versions\_bucket) | S3 bucket for application versions | `string` | n/a | yes |
+| <a name="input_absolute_path"></a> [absolute\_path](#input\_absolute\_path) | Absolute path to the configuration files - (Optional) default: "" | `string` | `""` | no |
+| <a name="input_alarms"></a> [alarms](#input\_alarms) | Alarms configuration for the environment - (Optional) default: {} | `any` | `{}` | no |
+| <a name="input_api_gateway"></a> [api\_gateway](#input\_api\_gateway) | API Gateway configuration for the environment - (Optional) default: {} | `any` | `{}` | no |
+| <a name="input_beanstalk"></a> [beanstalk](#input\_beanstalk) | Beanstalk environment configuration - (Required) | `any` | n/a | yes |
+| <a name="input_bucket_path"></a> [bucket\_path](#input\_bucket\_path) | Path to the S3 bucket - (Optional) default: "" (computed from the release) | `string` | `""` | no |
+| <a name="input_dns"></a> [dns](#input\_dns) | DNS configuration for environment - (Optional) default: {} | `any` | `{}` | no |
+| <a name="input_extra_tags"></a> [extra\_tags](#input\_extra\_tags) | Extra tags to add to the resources | `map(string)` | `{}` | no |
+| <a name="input_is_hub"></a> [is\_hub](#input\_is\_hub) | Is this a hub or spoke configuration? | `bool` | `false` | no |
+| <a name="input_logs_bucket"></a> [logs\_bucket](#input\_logs\_bucket) | S3 bucket for application logs - (Required) | `string` | n/a | yes |
+| <a name="input_namespace"></a> [namespace](#input\_namespace) | Environment namespace - (Required) | `string` | n/a | yes |
+| <a name="input_org"></a> [org](#input\_org) | Organization details | <pre>object({<br/>    organization_name = string<br/>    organization_unit = string<br/>    environment_type  = string<br/>    environment_name  = string<br/>  })</pre> | n/a | yes |
+| <a name="input_region"></a> [region](#input\_region) | AWS region - (Optional) default: us-east-1 | `string` | `"us-east-1"` | no |
+| <a name="input_release"></a> [release](#input\_release) | Release configuration - (Required) | `any` | n/a | yes |
+| <a name="input_repository_owner"></a> [repository\_owner](#input\_repository\_owner) | GitHub repository owner - (Required) | `string` | n/a | yes |
+| <a name="input_spoke_def"></a> [spoke\_def](#input\_spoke\_def) | Spoke ID Number, must be a 3 digit number | `string` | `"001"` | no |
+| <a name="input_sts_assume_role"></a> [sts\_assume\_role](#input\_sts\_assume\_role) | STS Assume Role ARN - (Optional) default: null | `string` | `null` | no |
+| <a name="input_versions_bucket"></a> [versions\_bucket](#input\_versions\_bucket) | S3 bucket for application versions - (Required) | `string` | n/a | yes |
 
 ## Outputs
 
