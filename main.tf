@@ -61,7 +61,7 @@ module "version" {
 
 module "app" {
   source                         = "cloudopsworks/beanstalk-deploy/aws"
-  version                        = "1.2.0"
+  version                        = "1.3.1"
   region                         = var.region
   sts_assume_role                = var.sts_assume_role
   release_name                   = var.release.name
