@@ -15,7 +15,7 @@
 
 | Name | Source | Version |
 | ---- | ------ | ------- |
-| <a name="module_app"></a> [app](#module\_app) | cloudopsworks/beanstalk-deploy/aws | 1.3.1 |
+| <a name="module_app"></a> [app](#module\_app) | cloudopsworks/beanstalk-deploy/aws | 1.3.2 |
 | <a name="module_app_dns_shared"></a> [app\_dns\_shared](#module\_app\_dns\_shared) | cloudopsworks/beanstalk-dns/aws | 1.1.0 |
 | <a name="module_dns"></a> [dns](#module\_dns) | cloudopsworks/beanstalk-dns/aws | 1.1.0 |
 | <a name="module_tags"></a> [tags](#module\_tags) | cloudopsworks/tags/local | 1.0.10 |
