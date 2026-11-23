@@ -41,7 +41,7 @@ introduction: |-
   | Module                             | Version  | Purpose                                                        |
   |------------------------------------|----------|----------------------------------------------------------------|
   | `cloudopsworks/beanstalk-version/aws` | `1.6.1` | Uploads and registers the application version bundle.          |
-  | `cloudopsworks/beanstalk-deploy/aws`  | `1.2.0` | Creates the Elastic Beanstalk environment and its load balancer. |
+  | `cloudopsworks/beanstalk-deploy/aws`  | `1.3.1` | Creates the Elastic Beanstalk environment and its load balancer. |
   | `cloudopsworks/beanstalk-dns/aws`     | `1.1.0` | Manages the Route53 alias record for the environment.          |
   | `cloudopsworks/tags/local`            | `1.0.10`| Builds the organization-wide common tag set.                   |
 
