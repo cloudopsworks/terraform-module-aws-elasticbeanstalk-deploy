@@ -62,7 +62,7 @@ The deployment is assembled from the following registry modules:
 | Module                             | Version  | Purpose                                                        |
 |------------------------------------|----------|----------------------------------------------------------------|
 | `cloudopsworks/beanstalk-version/aws` | `1.6.1` | Uploads and registers the application version bundle.          |
-| `cloudopsworks/beanstalk-deploy/aws`  | `1.3.1` | Creates the Elastic Beanstalk environment and its load balancer. |
+| `cloudopsworks/beanstalk-deploy/aws`  | `1.3.2` | Creates the Elastic Beanstalk environment and its load balancer. |
 | `cloudopsworks/beanstalk-dns/aws`     | `1.1.0` | Manages the Route53 alias record for the environment.          |
 | `cloudopsworks/tags/local`            | `1.0.10`| Builds the organization-wide common tag set.                   |
 
@@ -522,7 +522,7 @@ Available targets:
 
 | Name | Source | Version |
 | ---- | ------ | ------- |
-| <a name="module_app"></a> [app](#module\_app) | cloudopsworks/beanstalk-deploy/aws | 1.3.1 |
+| <a name="module_app"></a> [app](#module\_app) | cloudopsworks/beanstalk-deploy/aws | 1.3.2 |
 | <a name="module_app_dns_shared"></a> [app\_dns\_shared](#module\_app\_dns\_shared) | cloudopsworks/beanstalk-dns/aws | 1.1.0 |
 | <a name="module_dns"></a> [dns](#module\_dns) | cloudopsworks/beanstalk-dns/aws | 1.1.0 |
 | <a name="module_tags"></a> [tags](#module\_tags) | cloudopsworks/tags/local | 1.0.10 |
